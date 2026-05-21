@@ -42,7 +42,7 @@ function loadNotificaciones(activos) {
       notifs.push({ id: `m-${a.id}`, tipo: "Mantenimiento", activo: `${a.tipo} ${a.marca}`, codigo: a.codigo, responsable: a.responsable, prioridad: "Alta", fecha: a.fecha, detalle: "Mantenimiento preventivo programado", aprobado: false, activoId: a.id });
     }
     if (a.garantiaVence) {
-      const vence = new Date(a.garantiaVence);
+      const vence = new Date(a.garantiaVence + "T00:00:00");
       if (vence <= in30 && vence >= today) {
         notifs.push({ id: `g-${a.id}`, tipo: "Garantía próxima", activo: `${a.tipo} ${a.marca}`, codigo: a.codigo, responsable: a.responsable, prioridad: vence <= new Date(today.getTime() + 10*86400000) ? "Alta" : "Media", fecha: a.garantiaVence, detalle: `Garantía vence el ${a.garantiaVence}`, aprobado: false, activoId: a.id });
       } else if (vence < today) {
@@ -121,32 +121,45 @@ function Login({ onLogin }) {
   };
 
   return (
-    <div style={{ minHeight:"100vh", background:"linear-gradient(135deg,#0f172a 0%,#1e3a5f 50%,#0f172a 100%)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'DM Sans',system-ui,sans-serif" }}>
-      <div style={{ background:"rgba(255,255,255,0.05)", backdropFilter:"blur(20px)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:24, padding:"48px 40px", width:"100%", maxWidth:400, boxShadow:"0 25px 50px rgba(0,0,0,0.4)" }}>
+      <div style={{
+                   minHeight:"100vh",
+                   background:"#eef2ff",
+                   display:"flex",
+                   alignItems:"center",
+                   justifyContent:"center",
+                   fontFamily:"'DM Sans',system-ui,sans-serif"
+                  }}>
+      <div style={{
+                   background:"#ffffff",
+                   borderRadius:24,
+                   padding:"48px 40px",
+                   width:"100%",
+                   maxWidth:400,
+                   boxShadow:"0 10px 30px rgba(0,0,0,0.1)"
+                  }}>
         <div style={{ textAlign:"center", marginBottom:36 }}>
-          <div style={{ width:64, height:64, background:"linear-gradient(135deg,#3b82f6,#06b6d4)", borderRadius:16, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px" }}>
+          <div style={{ width:64, height:64, background:"linear-gradient(135deg,#4f46e5,#6d28d9)", borderRadius:16, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px" }}>
             <Shield size={32} color="#fff" />
           </div>
-          <h1 style={{ color:"#f1f5f9", fontSize:22, fontWeight:700, margin:0 }}>Sistema de Gestión</h1>
-          <p style={{ color:"#94a3b8", fontSize:14, marginTop:6 }}>de Activos</p>
+          <h1 style={{ color:"#0f172a", fontSize:22, fontWeight:700, margin:0 }}>Sistema de Gestión de Activos</h1>
         </div>
 
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
           <div>
-            <label style={{ color:"#94a3b8", fontSize:13, display:"block", marginBottom:6 }}>Correo electrónico</label>
+            <label style={{ color:"#374151", fontSize:13, display:"block", marginBottom:6 }}>Correo electrónico</label>
             <input value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()}
               placeholder="usuario@empresa.com"
-              style={{ width:"100%", padding:"12px 14px", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:10, color:"#f1f5f9", fontSize:14, outline:"none", boxSizing:"border-box" }} />
+              style={{ width:"100%", padding:"12px 14px", background:"#ffffff", border:"1px solid #d1d5db", borderRadius:10, color:"#0f172a", fontSize:14, outline:"none", boxSizing:"border-box" }} />
           </div>
           <div>
-            <label style={{ color:"#94a3b8", fontSize:13, display:"block", marginBottom:6 }}>Contraseña</label>
+            <label style={{ color:"#374151", fontSize:13, display:"block", marginBottom:6 }}>Contraseña</label>
             <input type="password" value={pass} onChange={e=>setPass(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()}
               placeholder="••••••••"
-              style={{ width:"100%", padding:"12px 14px", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:10, color:"#f1f5f9", fontSize:14, outline:"none", boxSizing:"border-box" }} />
+              style={{ width:"100%", padding:"12px 14px", background:"#ffffff", border:"1px solid #d1d5db", borderRadius:10, color:"#0f172a", fontSize:14, outline:"none", boxSizing:"border-box" }} />
           </div>
           {err && <p style={{ color:"#f87171", fontSize:13, margin:0 }}>{err}</p>}
           <button onClick={submit}
-            style={{ marginTop:6, padding:"13px", background:"linear-gradient(135deg,#3b82f6,#06b6d4)", border:"none", borderRadius:10, color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer" }}>
+            style={{ marginTop:6, padding:"13px", background:"linear-gradient(135deg,#4f46e5,#6d28d9)", border:"none", borderRadius:10, color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer" }}>
             Iniciar sesión
           </button>
         </div>
@@ -305,16 +318,45 @@ function Dashboard({ activos, notificaciones, onNavigate, user, onLogout }) {
 }
 
 // ─── INVENTARIO ─────────────────────────────────────────────────────────────
+function getStatStyle(estado) {
+  return {
+    Activo:        { background:"#d1fae5", color:"#065f46" },
+    Inactivo:      { background:"#fee2e2", color:"#991b1b" },
+    Mantenimiento: { background:"#fef3c7", color:"#92400e" },
+  }[estado] || { background:"#f1f5f9", color:"#475569" };
+}
 function Inventario({ activos, setActivos, onNavigate, onBack }) {
-  const [showForm, setShowForm] = useState(false);
-  const [search, setSearch]     = useState("");
-  const [form, setForm]         = useState({ codigo:"", tipo:"", marca:"", serial:"", estado:"Activo", responsable:"", ubicacion:"", area:"IT", garantiaVence:"" });
-  const [qrModal, setQrModal]   = useState(null); // activo para mostrar QR
-  const [saved, setSaved]       = useState(false);
+const [search, setSearch] = useState("");
+const [showForm, setShowForm] = useState(false);
+const generarCodigo = () => {
+   const ultimoId = Math.max(
+      ...activos.map(a =>
+         parseInt(a.codigo.replace("ACT-","")) || 0
+      )
+   );
 
-  const filtered = activos.filter(a =>
-    [a.codigo,a.tipo,a.marca,a.serial,a.responsable,a.ubicacion].some(v=>v.toLowerCase().includes(search.toLowerCase()))
-  );
+   return `ACT-${String(ultimoId + 1).padStart(3,"0")}`;
+};
+const [form, setForm] = useState({
+   codigo: generarCodigo(),
+   tipo:"Laptop",
+   marca:"",
+   serial:"",
+   estado:"Activo",
+   responsable:"",
+   ubicacion:"",
+   area:"IT",
+   garantiaVence:""
+});
+const [qrModal, setQrModal] = useState(null);
+const [saved, setSaved] = useState(false);
+
+const filtered = activos.filter(a =>
+  [a.codigo,a.tipo,a.marca,a.serial,a.responsable,a.ubicacion]
+    .some(v => String(v || "")
+    .toLowerCase()
+    .includes(search.toLowerCase()))
+);
 
   const handleSave = () => {
     if (!form.codigo||!form.tipo||!form.marca||!form.serial||!form.responsable||!form.ubicacion) {
@@ -327,7 +369,17 @@ function Inventario({ activos, setActivos, onNavigate, onBack }) {
       historial: [{ fecha: new Date().toISOString().split("T")[0], accion:"Registro inicial", detalle:"Activo ingresado al sistema", usuario:"Admin" }] };
     const updated = [nuevo, ...activos];
     setActivos(updated); saveActivos(updated);
-    setForm({ codigo:"", tipo:"", marca:"", serial:"", estado:"Activo", responsable:"", ubicacion:"", area:"IT", garantiaVence:"" });
+    setForm({
+             codigo: generarCodigo(),
+             tipo:"Laptop",
+             marca:"",
+             serial:"",
+             estado:"Activo",
+             responsable:"",
+             ubicacion:"",
+             area:"IT",
+             garantiaVence:""
+          });
     setShowForm(false); setSaved(true); setTimeout(()=>setSaved(false),2500);
   };
 
@@ -364,8 +416,8 @@ function Inventario({ activos, setActivos, onNavigate, onBack }) {
               { label:"Responsable *",    key:"responsable", type:"text",   placeholder:"Nombre completo" },
               { label:"Área",             key:"area",        type:"select", options:["IT","RRHH","Ventas","Marketing","Finanzas","Operaciones"] },
               { label:"Garantía vence",   key:"garantiaVence",type:"date",  placeholder:"" },
-            ].map(f=>(
-              <div key={f.key} style={f.key==="ubicacion"?{ gridColumn:"1/-1" }:{}}>
+          ].map(f=>(
+              <div key={f.key}> 
                 <label style={{ display:"block", fontSize:13, fontWeight:500, color:"#374151", marginBottom:6 }}>{f.label}</label>
                 {f.type==="select"
                   ? <select value={form[f.key]} onChange={e=>setForm({...form,[f.key]:e.target.value})}
@@ -402,7 +454,7 @@ function Inventario({ activos, setActivos, onNavigate, onBack }) {
             <Search size={16} color="#94a3b8"/>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar por código, tipo, serial, responsable..."
               style={{ border:"none", outline:"none", fontSize:14, flex:1, color:"#374151" }}/>
-            <span style={{ fontSize:12, color:"#94a3b8" }}>{filtered.length} activos</span>
+            <span style={{ fontSize:12, color:"#94a3b8" }}>{filtered.length} Activos Registrados</span>
           </div>
           <div style={{ overflowX:"auto" }}>
             <table style={{ width:"100%", borderCollapse:"collapse" }}>
@@ -461,14 +513,6 @@ function Inventario({ activos, setActivos, onNavigate, onBack }) {
       )}
     </Layout>
   );
-}
-
-function getStatStyle(estado) {
-  return {
-    Activo:        { background:"#d1fae5", color:"#065f46" },
-    Inactivo:      { background:"#fee2e2", color:"#991b1b" },
-    Mantenimiento: { background:"#fef3c7", color:"#92400e" },
-  }[estado] || { background:"#f1f5f9", color:"#475569" };
 }
 
 // ─── DETALLE ACTIVO ──────────────────────────────────────────────────────────
@@ -950,15 +994,43 @@ export default function App() {
   const [activos, setActivos] = useState(loadActivos);
   const [screen,  setScreen]  = useState("dashboard"); // dashboard | inventario | escaneo | detalle | notificaciones | reportes | validacion
   const [activoId,setActivoId]= useState(null);
-
-  const notificaciones = loadNotificaciones(activos);
-  const [notifState, setNotifState] = useState(notificaciones);
+  const [notifState, setNotifState] = useState(() => loadNotificaciones(activos));
 
   // Refresh notifs whenever activos change
-  useEffect(()=>{ setNotifState(loadNotificaciones(activos)); }, [activos]);
+  useEffect(() => {
+   const nuevas = loadNotificaciones(activos);
 
-  const navigate = (to, id=null) => { setScreen(to); if(id) setActivoId(id); };
-  const logout = () => { localStorage.removeItem(USER_KEY); setUser(null); };
+   setNotifState(prev => {
+      const aprobadas = prev.filter(n => n.aprobado);
+
+      return nuevas.map(nueva => {
+         const yaAprobada = aprobadas.find(
+            a => a.id === nueva.id
+         );
+
+         return yaAprobada
+            ? { ...nueva, aprobado:true }
+            : nueva;
+      });
+   });
+
+}, [activos]);
+
+  const navigate = (to, id=null) => {
+   setScreen(to);
+
+   if(id !== null){
+      setActivoId(id);
+   }
+};
+  const logout = () => {
+   localStorage.removeItem(USER_KEY);
+
+   setScreen("dashboard");
+   setActivoId(null);
+
+   setUser(null);
+};
 
   if (!user) return <Login onLogin={setUser}/>;
 
